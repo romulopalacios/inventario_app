@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/services/inventory_service.dart';
+import '../../../../core/providers/database_providers.dart';
 
 class StockMovementScreen extends ConsumerStatefulWidget {
   final String productId;
@@ -20,6 +21,27 @@ class _StockMovementScreenState extends ConsumerState<StockMovementScreen> {
 
   String _selectedType = 'entrada';
   bool _isLoading = false;
+  int _currentStock = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCurrentStock();
+  }
+
+  Future<void> _loadCurrentStock() async {
+    try {
+      final db = ref.read(databaseProvider);
+      final product = await db.getProductByUuid(widget.productId);
+      if (product != null && mounted) {
+        setState(() {
+          _currentStock = product.stock;
+        });
+      }
+    } catch (e) {
+      // Handle error silently or show a message
+    }
+  }
 
   @override
   void dispose() {
@@ -57,6 +79,65 @@ class _StockMovementScreenState extends ConsumerState<StockMovementScreen> {
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
+              // Stock Information Card
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.inventory,
+                        color: _currentStock <= 0 ? Colors.red : Colors.blue,
+                        size: 32,
+                      ),
+                      const SizedBox(width: 16),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Stock Actual',
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(color: Colors.grey[600]),
+                          ),
+                          Text(
+                            '$_currentStock',
+                            style: Theme.of(
+                              context,
+                            ).textTheme.headlineMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color:
+                                  _currentStock <= 0 ? Colors.red : Colors.blue,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const Spacer(),
+                      if (_currentStock <= 0)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.red.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Text(
+                            'Sin Stock',
+                            style: TextStyle(
+                              color: Colors.red,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(16),
@@ -140,7 +221,7 @@ class _StockMovementScreenState extends ConsumerState<StockMovementScreen> {
                           helperText:
                               _selectedType == 'ajuste'
                                   ? 'Cantidad total que quedará en stock'
-                                  : 'Cantidad a ${_selectedType == 'entrada' ? 'agregar' : 'quitar'}',
+                                  : 'Cantidad a ${_selectedType == 'entrada' ? 'agregar' : 'quitar'} (Stock actual: $_currentStock)',
                         ),
                         keyboardType: TextInputType.number,
                         validator: (value) {
@@ -151,6 +232,13 @@ class _StockMovementScreenState extends ConsumerState<StockMovementScreen> {
                           if (quantity == null || quantity <= 0) {
                             return 'Ingresa una cantidad válida';
                           }
+
+                          // Validate for salida (exit) operations
+                          if (_selectedType == 'salida' &&
+                              quantity > _currentStock) {
+                            return 'No hay suficiente stock (actual: $_currentStock)';
+                          }
+
                           return null;
                         },
                       ),
@@ -252,17 +340,26 @@ class _StockMovementScreenState extends ConsumerState<StockMovementScreen> {
                 : _notesController.text.trim(),
       );
 
+      // Invalidate providers to refresh data
+      ref.invalidate(productsProvider);
+      ref.invalidate(productDetailProvider(widget.productId));
+      ref.invalidate(stockMovementsProvider(widget.productId));
+      ref.invalidate(inventoryStatsProvider);
+
       if (mounted) {
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Movimiento registrado correctamente')),
+          const SnackBar(
+            content: Text('Movimiento registrado correctamente'),
+            backgroundColor: Colors.green,
+          ),
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
       }
     } finally {
       if (mounted) {

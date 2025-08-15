@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/services/inventory_service.dart';
+import '../../../../core/providers/database_providers.dart';
+import '../../../../shared/widgets/category_dropdown.dart';
 
 class AddEditProductScreen extends ConsumerStatefulWidget {
   final String? productId;
@@ -16,21 +18,68 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _codeController = TextEditingController();
-  final _categoryController = TextEditingController();
   final _purchasePriceController = TextEditingController();
   final _salePriceController = TextEditingController();
   final _stockController = TextEditingController();
   final _minStockController = TextEditingController();
   final _descriptionController = TextEditingController();
 
+  String? _selectedCategory;
   bool get isEditing => widget.productId != null;
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (isEditing) {
+      _loadProductData();
+    }
+  }
+
+  Future<void> _loadProductData() async {
+    if (widget.productId == null) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final db = ref.read(databaseProvider);
+      final product = await db.getProductByUuid(widget.productId!);
+
+      if (product != null && mounted) {
+        _nameController.text = product.name;
+        _codeController.text = product.code ?? '';
+        _selectedCategory = product.category;
+        _purchasePriceController.text = product.purchasePrice.toString();
+        _salePriceController.text = product.salePrice.toString();
+        _stockController.text = product.stock.toString();
+        _minStockController.text = product.minStock.toString();
+        _descriptionController.text = product.description ?? '';
+
+        setState(() {
+          // Data loaded
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error al cargar producto: $e')));
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   void dispose() {
     _nameController.dispose();
     _codeController.dispose();
-    _categoryController.dispose();
     _purchasePriceController.dispose();
     _salePriceController.dispose();
     _stockController.dispose();
@@ -41,6 +90,14 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Show loading while editing product data is being loaded
+    if (isEditing && _isLoading) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Cargando...')),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: Text(isEditing ? 'Editar Producto' : 'Agregar Producto'),
@@ -102,12 +159,16 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _categoryController,
-                        decoration: const InputDecoration(
-                          labelText: 'Categoría',
-                          border: OutlineInputBorder(),
-                        ),
+                      CategoryDropdown(
+                        initialValue: _selectedCategory,
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedCategory = value;
+                          });
+                        },
+                        hintText: 'Seleccionar categoría',
+                        allowEmpty: true,
+                        allowCreate: true,
                       ),
                       const SizedBox(height: 16),
                       TextFormField(
@@ -299,10 +360,7 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
               _codeController.text.trim().isEmpty
                   ? null
                   : _codeController.text.trim(),
-          category:
-              _categoryController.text.trim().isEmpty
-                  ? null
-                  : _categoryController.text.trim(),
+          category: _selectedCategory,
           purchasePrice: double.tryParse(_purchasePriceController.text) ?? 0,
           salePrice: double.tryParse(_salePriceController.text) ?? 0,
           stock: int.tryParse(_stockController.text) ?? 0,
@@ -319,10 +377,7 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
               _codeController.text.trim().isEmpty
                   ? null
                   : _codeController.text.trim(),
-          category:
-              _categoryController.text.trim().isEmpty
-                  ? null
-                  : _categoryController.text.trim(),
+          category: _selectedCategory,
           purchasePrice: double.tryParse(_purchasePriceController.text) ?? 0,
           salePrice: double.tryParse(_salePriceController.text) ?? 0,
           stock: int.tryParse(_stockController.text) ?? 0,
@@ -332,6 +387,13 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
                   ? null
                   : _descriptionController.text.trim(),
         );
+
+        // Invalidate providers to refresh data
+        ref.invalidate(productsProvider);
+        if (isEditing) {
+          ref.invalidate(productDetailProvider(widget.productId!));
+        }
+        ref.invalidate(inventoryStatsProvider);
       }
 
       if (mounted) {
@@ -343,14 +405,15 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
                   ? 'Producto actualizado correctamente'
                   : 'Producto creado correctamente',
             ),
+            backgroundColor: Colors.green,
           ),
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
       }
     } finally {
       if (mounted) {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/services/sample_data_service.dart';
 import '../../core/services/inventory_service.dart';
 import '../../core/providers/database_providers.dart';
@@ -122,8 +123,7 @@ class SampleDataWidget extends ConsumerWidget {
   }
 
   void _addFirstProduct(BuildContext context) {
-    // Navigate to add product screen
-    // This would use go_router in a real implementation
-    Navigator.of(context).pushNamed('/products/add');
+    // Navigate to add product screen using go_router
+    context.go('/products/add');
   }
 }

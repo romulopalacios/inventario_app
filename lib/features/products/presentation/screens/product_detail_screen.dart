@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/providers/database_providers.dart';
 import '../../../../core/services/inventory_service.dart';
+import '../../../../shared/widgets/confirmation_dialog.dart';
 
 class ProductDetailScreen extends ConsumerWidget {
   final String productId;
@@ -467,43 +468,38 @@ class ProductDetailScreen extends ConsumerWidget {
   }
 
   void _showDeleteDialog(BuildContext context, WidgetRef ref) {
-    showDialog(
+    ConfirmationDialog.show(
       context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('Eliminar Producto'),
-            content: const Text(
-              '¿Estás seguro de que quieres eliminar este producto?',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Cancelar'),
+      title: 'Eliminar Producto',
+      content:
+          '¿Estás seguro de que quieres eliminar este producto? Esta acción no se puede deshacer.',
+      confirmText: 'Eliminar',
+      cancelText: 'Cancelar',
+      confirmColor: Colors.red,
+      icon: Icons.delete_forever,
+      onConfirm: () async {
+        try {
+          await ref.read(deleteProductProvider(productId).future);
+          if (context.mounted) {
+            context.go('/products');
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Producto eliminado correctamente'),
+                backgroundColor: Colors.green,
               ),
-              TextButton(
-                onPressed: () async {
-                  Navigator.of(context).pop();
-                  try {
-                    await ref.read(deleteProductProvider(productId).future);
-                    if (context.mounted) {
-                      context.go('/products');
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Producto eliminado')),
-                      );
-                    }
-                  } catch (e) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Error al eliminar: $e')),
-                      );
-                    }
-                  }
-                },
-                style: TextButton.styleFrom(foregroundColor: Colors.red),
-                child: const Text('Eliminar'),
+            );
+          }
+        } catch (e) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Error al eliminar: $e'),
+                backgroundColor: Colors.red,
               ),
-            ],
-          ),
+            );
+          }
+        }
+      },
     );
   }
 }

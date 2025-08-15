@@ -27,39 +27,46 @@ class _ProductsListScreenState extends ConsumerState<ProductsListScreen> {
     final selectedCategory = ref.watch(selectedCategoryProvider);
     final searchResults = ref.watch(productSearchProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Productos'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: () => _showSearchDialog(context),
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Category filter
-          categories.when(
-            data:
-                (categoriesList) =>
-                    _buildCategoryFilter(categoriesList, selectedCategory),
-            loading: () => const LinearProgressIndicator(),
-            error: (error, stackTrace) => Container(),
-          ),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        context.go('/');
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Productos'),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.search),
+              onPressed: () => _showSearchDialog(context),
+            ),
+          ],
+        ),
+        body: Column(
+          children: [
+            // Category filter
+            categories.when(
+              data:
+                  (categoriesList) =>
+                      _buildCategoryFilter(categoriesList, selectedCategory),
+              loading: () => const LinearProgressIndicator(),
+              error: (error, stackTrace) => Container(),
+            ),
 
-          // Products list
-          Expanded(
-            child:
-                _searchController.text.isNotEmpty
-                    ? _buildSearchResults(searchResults)
-                    : _buildProductsList(products),
-          ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => context.go('/products/add'),
-        child: const Icon(Icons.add),
+            // Products list
+            Expanded(
+              child:
+                  _searchController.text.isNotEmpty
+                      ? _buildSearchResults(searchResults)
+                      : _buildProductsList(products),
+            ),
+          ],
+        ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: () => context.go('/products/add'),
+          child: const Icon(Icons.add),
+        ),
       ),
     );
   }

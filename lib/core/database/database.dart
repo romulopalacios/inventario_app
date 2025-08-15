@@ -4,10 +4,10 @@ import 'package:drift_flutter/drift_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 
-// Import all tables
+// Importar todas las tablas
 part 'database.g.dart';
 
-// Products table
+// Tabla de productos
 class Products extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get uuid => text().unique()();
@@ -26,7 +26,7 @@ class Products extends Table {
   BoolColumn get isSynced => boolean().withDefault(const Constant(false))();
 }
 
-// Stock movements table
+// Tabla de movimientos de stock
 class StockMovements extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get uuid => text().unique()();
@@ -42,7 +42,7 @@ class StockMovements extends Table {
   BoolColumn get isSynced => boolean().withDefault(const Constant(false))();
 }
 
-// Categories table
+// Tabla de categorías
 class Categories extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get uuid => text().unique()();
@@ -54,7 +54,7 @@ class Categories extends Table {
   BoolColumn get isSynced => boolean().withDefault(const Constant(false))();
 }
 
-// User settings table
+// Tabla de configuración de usuario
 class UserSettings extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get key => text().unique()();
