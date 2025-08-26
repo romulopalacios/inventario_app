@@ -147,6 +147,29 @@ class AppDatabase extends _$AppDatabase {
     return into(categories).insert(category);
   }
 
+  Future<int> markCategoryAsSynced(String uuid) {
+    return (update(categories)..where(
+      (tbl) => tbl.uuid.equals(uuid),
+    )).write(const CategoriesCompanion(isSynced: Value(true)));
+  }
+
+  Future<int> markProductAsSynced(String uuid) {
+    return (update(products)..where(
+      (tbl) => tbl.uuid.equals(uuid),
+    )).write(const ProductsCompanion(isSynced: Value(true)));
+  }
+
+  Future<int> markMovementAsSynced(String uuid) {
+    return (update(stockMovements)..where(
+      (tbl) => tbl.uuid.equals(uuid),
+    )).write(const StockMovementsCompanion(isSynced: Value(true)));
+  }
+
+  Future<List<StockMovement>> getAllStockMovements() {
+    return (select(stockMovements)
+      ..orderBy([(tbl) => OrderingTerm.desc(tbl.createdAt)])).get();
+  }
+
   // Settings queries
   Future<String?> getSetting(String key) async {
     final setting =
@@ -168,6 +191,7 @@ class AppDatabase extends _$AppDatabase {
   // Inventory calculations
   Future<Map<String, dynamic>> getInventoryStats() async {
     final allProducts = await getAllProducts();
+    final allCategories = await getAllCategories();
     final totalProducts = allProducts.length;
     final totalValue = allProducts.fold<double>(
       0,
@@ -182,6 +206,7 @@ class AppDatabase extends _$AppDatabase {
       'totalProducts': totalProducts,
       'totalValue': totalValue,
       'lowStockCount': lowStockCount,
+      'categoriesCount': allCategories.length,
     };
   }
 }

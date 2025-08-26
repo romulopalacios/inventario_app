@@ -26,6 +26,7 @@ dependencies:
   
   # Backend and Sync
   supabase_flutter: ^2.5.6
+  http: ^1.2.2
   
   # Routing
   go_router: ^14.2.7

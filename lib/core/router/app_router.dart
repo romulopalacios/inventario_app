@@ -8,6 +8,7 @@ import '../../features/products/presentation/screens/add_edit_product_screen.dar
 import '../../features/products/presentation/screens/stock_movement_screen.dart';
 import '../../features/reports/presentation/screens/reports_screen.dart';
 import '../../features/settings/presentation/screens/settings_screen.dart';
+import '../../features/sync/presentation/screens/sync_settings_screen.dart';
 
 final goRouter = GoRouter(
   initialLocation: '/',
@@ -78,6 +79,13 @@ final goRouter = GoRouter(
       path: '/settings',
       name: 'settings',
       builder: (context, state) => const SettingsScreen(),
+    ),
+
+    // Sync settings routes
+    GoRoute(
+      path: '/sync-settings',
+      name: 'sync-settings',
+      builder: (context, state) => const SyncSettingsScreen(),
     ),
   ],
 );
