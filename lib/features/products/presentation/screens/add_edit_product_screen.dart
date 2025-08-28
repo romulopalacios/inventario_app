@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/services/inventory_service.dart';
+import '../../../../core/services/barcode_scanner_service.dart';
 import '../../../../core/providers/database_providers.dart';
 import '../../../../shared/widgets/category_dropdown.dart';
+import '../../../../shared/widgets/product_image_gallery.dart';
 
 class AddEditProductScreen extends ConsumerStatefulWidget {
   final String? productId;
@@ -151,12 +153,28 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
                         },
                       ),
                       const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _codeController,
-                        decoration: const InputDecoration(
-                          labelText: 'Código/SKU',
-                          border: OutlineInputBorder(),
-                        ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: _codeController,
+                              decoration: const InputDecoration(
+                                labelText: 'Código/SKU',
+                                border: OutlineInputBorder(),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          IconButton(
+                            onPressed: _scanBarcode,
+                            icon: const Icon(Icons.qr_code_scanner),
+                            tooltip: 'Escanear código',
+                            style: IconButton.styleFrom(
+                              backgroundColor: Theme.of(context).primaryColor,
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 16),
                       CategoryDropdown(
@@ -313,6 +331,31 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
                 ),
               ),
 
+              const SizedBox(height: 16),
+
+              // Image Gallery (solo si estamos editando y tenemos el ID)
+              if (isEditing && widget.productId != null)
+                ProductImageGallery(
+                  productId: widget.productId!,
+                  productName:
+                      _nameController.text.isEmpty
+                          ? 'Producto'
+                          : _nameController.text,
+                  allowEdit: true,
+                  onImageAdded: (imagePath) {
+                    // Opcionalmente, puedes manejar cuando se agrega una imagen
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Imagen agregada')),
+                    );
+                  },
+                  onImageDeleted: (imagePath) {
+                    // Opcionalmente, puedes manejar cuando se elimina una imagen
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Imagen eliminada')),
+                    );
+                  },
+                ),
+
               const SizedBox(height: 24),
 
               // Save Button
@@ -338,6 +381,35 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _scanBarcode() async {
+    try {
+      final scannedCode = await BarcodeScannerService.scanBarcode(context);
+      if (scannedCode != null) {
+        setState(() {
+          _codeController.text = scannedCode;
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Código escaneado: $scannedCode'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al escanear: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _saveProduct() async {
@@ -390,10 +462,13 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
 
         // Invalidate providers to refresh data
         ref.invalidate(productsProvider);
+        ref.invalidate(filteredProductsProvider);
+        ref.invalidate(categoriesProvider);
         if (isEditing) {
           ref.invalidate(productDetailProvider(widget.productId!));
         }
         ref.invalidate(inventoryStatsProvider);
+        ref.invalidate(lowStockProductsProvider);
       }
 
       if (mounted) {

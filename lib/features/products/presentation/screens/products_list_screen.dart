@@ -1,8 +1,12 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/providers/database_providers.dart';
+import '../../../../core/providers/reactive_providers.dart';
+import '../../../../core/services/image_service.dart';
+import '../../../../shared/widgets/barcode_search_button.dart';
 
 class ProductsListScreen extends ConsumerStatefulWidget {
   const ProductsListScreen({super.key});
@@ -37,6 +41,13 @@ class _ProductsListScreenState extends ConsumerState<ProductsListScreen> {
         appBar: AppBar(
           title: const Text('Productos'),
           actions: [
+            BarcodeSearchButton(
+              onCodeScanned: (code) {
+                ref.read(productSearchProvider.notifier).searchProducts(code);
+                _searchController.text = code;
+              },
+              tooltip: 'Buscar por código de barras',
+            ),
             IconButton(
               icon: const Icon(Icons.search),
               onPressed: () => _showSearchDialog(context),
@@ -194,31 +205,37 @@ class _ProductsListScreenState extends ConsumerState<ProductsListScreen> {
               isLowStock
                   ? Colors.red.withOpacity(0.2)
                   : Colors.blue.withOpacity(0.2),
-          child:
-              product.imagePath != null
-                  ? ClipOval(
-                    child: Image.network(
-                      product.imagePath,
-                      width: 40,
-                      height: 40,
-                      fit: BoxFit.cover,
-                      errorBuilder:
-                          (context, error, stackTrace) => Text(
-                            product.name[0].toUpperCase(),
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: isLowStock ? Colors.red : Colors.blue,
-                            ),
+          child: FutureBuilder<List<String>>(
+            future: ref.watch(productImagesProvider(product.uuid).future),
+            builder: (context, snapshot) {
+              if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+                return ClipOval(
+                  child: Image.file(
+                    File(snapshot.data!.first),
+                    width: 40,
+                    height: 40,
+                    fit: BoxFit.cover,
+                    errorBuilder:
+                        (context, error, stackTrace) => Text(
+                          product.name[0].toUpperCase(),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: isLowStock ? Colors.red : Colors.blue,
                           ),
-                    ),
-                  )
-                  : Text(
-                    product.name[0].toUpperCase(),
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: isLowStock ? Colors.red : Colors.blue,
-                    ),
+                        ),
                   ),
+                );
+              } else {
+                return Text(
+                  product.name[0].toUpperCase(),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: isLowStock ? Colors.red : Colors.blue,
+                  ),
+                );
+              }
+            },
+          ),
         ),
         title: Text(
           product.name,

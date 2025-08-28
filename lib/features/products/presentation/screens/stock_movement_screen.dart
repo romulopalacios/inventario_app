@@ -342,9 +342,11 @@ class _StockMovementScreenState extends ConsumerState<StockMovementScreen> {
 
       // Invalidate providers to refresh data
       ref.invalidate(productsProvider);
+      ref.invalidate(filteredProductsProvider);
       ref.invalidate(productDetailProvider(widget.productId));
       ref.invalidate(stockMovementsProvider(widget.productId));
       ref.invalidate(inventoryStatsProvider);
+      ref.invalidate(lowStockProductsProvider);
 
       if (mounted) {
         Navigator.of(context).pop();

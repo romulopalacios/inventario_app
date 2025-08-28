@@ -1,10 +1,14 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/providers/database_providers.dart';
+import '../../../../core/providers/reactive_providers.dart';
+import '../../../../core/services/image_service.dart';
 import '../../../../core/services/inventory_service.dart';
 import '../../../../shared/widgets/confirmation_dialog.dart';
+import '../../../../shared/widgets/product_image_gallery.dart';
 
 class ProductDetailScreen extends ConsumerWidget {
   final String productId;
@@ -71,7 +75,13 @@ class ProductDetailScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildProductInfo(context, product),
+                  _buildProductInfo(context, ref, product),
+                  const SizedBox(height: 16),
+                  ProductImageGallery(
+                    productId: productId,
+                    productName: product.name,
+                    allowEdit: true,
+                  ),
                   const SizedBox(height: 16),
                   _buildStockSection(context, product),
                   const SizedBox(height: 16),
@@ -103,9 +113,12 @@ class ProductDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildProductInfo(BuildContext context, dynamic product) {
+  Widget _buildProductInfo(
+    BuildContext context,
+    WidgetRef ref,
+    dynamic product,
+  ) {
     final formatter = NumberFormat.currency(locale: 'es_ES', symbol: '\$');
-    final isLowStock = product.stock <= product.minStock;
 
     return Card(
       child: Padding(
@@ -123,26 +136,34 @@ class ProductDetailScreen extends ConsumerWidget {
                     color: Colors.grey.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child:
-                      product.imagePath != null
-                          ? ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: Image.network(
-                              product.imagePath,
-                              fit: BoxFit.cover,
-                              errorBuilder:
-                                  (context, error, stackTrace) => Icon(
-                                    Icons.image,
-                                    size: 40,
-                                    color: Colors.grey[400],
-                                  ),
-                            ),
-                          )
-                          : Icon(
-                            Icons.image,
-                            size: 40,
-                            color: Colors.grey[400],
+                  child: FutureBuilder<List<String>>(
+                    future: ref.watch(
+                      productImagesProvider(product.uuid).future,
+                    ),
+                    builder: (context, snapshot) {
+                      if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+                        return ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.file(
+                            File(snapshot.data!.first),
+                            fit: BoxFit.cover,
+                            errorBuilder:
+                                (context, error, stackTrace) => Icon(
+                                  Icons.image,
+                                  size: 40,
+                                  color: Colors.grey[400],
+                                ),
                           ),
+                        );
+                      } else {
+                        return Icon(
+                          Icons.image,
+                          size: 40,
+                          color: Colors.grey[400],
+                        );
+                      }
+                    },
+                  ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -480,6 +501,13 @@ class ProductDetailScreen extends ConsumerWidget {
       onConfirm: () async {
         try {
           await ref.read(deleteProductProvider(productId).future);
+
+          // Invalidate providers to refresh data
+          ref.invalidate(productsProvider);
+          ref.invalidate(filteredProductsProvider);
+          ref.invalidate(inventoryStatsProvider);
+          ref.invalidate(lowStockProductsProvider);
+
           if (context.mounted) {
             context.go('/products');
             ScaffoldMessenger.of(context).showSnackBar(

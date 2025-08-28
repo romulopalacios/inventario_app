@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/providers/database_providers.dart';
 import '../../../../shared/widgets/sample_data_widget.dart';
 import '../../../reports/presentation/widgets/inventory_summary_card.dart';
-import '../../../sync/presentation/widgets/sync_status_card.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -65,11 +64,6 @@ class HomeScreen extends ConsumerWidget {
 
               // Reporte mejorado con InventorySummaryCard
               const InventorySummaryCard(),
-
-              const SizedBox(height: 16),
-
-              // Estado de sincronización
-              const SyncStatusCard(),
 
               const SizedBox(height: 16),
 

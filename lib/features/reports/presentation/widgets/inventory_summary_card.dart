@@ -15,7 +15,7 @@ class InventorySummaryCard extends ConsumerWidget {
           (stats) => Card(
             elevation: 4,
             child: Padding(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -24,7 +24,7 @@ class InventorySummaryCard extends ConsumerWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          'Resumen del Inventario',
+                          'Resumen Inventario',
                           style: Theme.of(
                             context,
                           ).textTheme.titleLarge?.copyWith(
@@ -33,90 +33,106 @@ class InventorySummaryCard extends ConsumerWidget {
                           ),
                         ),
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.green[100],
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: Colors.green[300]!),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.offline_bolt,
-                              size: 14,
-                              color: Colors.green[700],
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              'Offline',
-                              style: TextStyle(
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.green[100],
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: Colors.green[300]!),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.online_prediction,
+                                size: 14,
                                 color: Colors.green[700],
-                                fontWeight: FontWeight.w600,
-                                fontSize: 11,
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 4),
+                              Text(
+                                'Offline',
+                                style: TextStyle(
+                                  color: Colors.green[700],
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ],
                   ),
 
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 16),
 
                   // Métricas principales en grid 2x2
-                  GridView.count(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                    childAspectRatio: 1.1,
+                  Column(
                     children: [
-                      _buildMetricCard(
-                        context,
-                        'Total Productos',
-                        '${stats['totalProducts']}',
-                        Icons.inventory_2,
-                        Colors.blue,
-                        'productos registrados',
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildMetricCard(
+                              context,
+                              'Total Productos',
+                              '${stats['totalProducts']}',
+                              Icons.inventory_2,
+                              Colors.blue,
+                              'productos registrados',
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _buildMetricCard(
+                              context,
+                              'Valor Total',
+                              NumberFormat.currency(
+                                locale: 'es_ES',
+                                symbol: '\$',
+                                decimalDigits: 0,
+                              ).format(stats['totalValue']),
+                              Icons.attach_money,
+                              Colors.green,
+                              'valor del inventario',
+                            ),
+                          ),
+                        ],
                       ),
-                      _buildMetricCard(
-                        context,
-                        'Valor Total',
-                        NumberFormat.currency(
-                          locale: 'es_ES',
-                          symbol: '\$',
-                          decimalDigits: 0,
-                        ).format(stats['totalValue']),
-                        Icons.attach_money,
-                        Colors.green,
-                        'valor del inventario',
-                      ),
-                      _buildMetricCard(
-                        context,
-                        'Stock Crítico',
-                        '${stats['lowStockCount']}',
-                        Icons.warning_amber,
-                        Colors.orange,
-                        'productos con stock bajo',
-                      ),
-                      _buildMetricCard(
-                        context,
-                        'Categorías',
-                        '${stats['categoriesCount'] ?? 0}',
-                        Icons.category,
-                        Colors.purple,
-                        'categorías activas',
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildMetricCard(
+                              context,
+                              'Stock Crítico',
+                              '${stats['lowStockCount']}',
+                              Icons.warning_amber,
+                              Colors.orange,
+                              'productos con stock bajo',
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _buildMetricCard(
+                              context,
+                              'Categorías',
+                              '${stats['categoriesCount'] ?? 0}',
+                              Icons.category,
+                              Colors.purple,
+                              'categorías activas',
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
 
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 12),
 
                   // Resumen adicional
                   _buildDetailedSummary(context, stats),
@@ -197,10 +213,9 @@ class InventorySummaryCard extends ConsumerWidget {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Container(
                 padding: const EdgeInsets.all(6),
@@ -208,47 +223,43 @@ class InventorySummaryCard extends ConsumerWidget {
                   color: color.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(6),
                 ),
-                child: Icon(icon, color: color, size: 18),
+                child: Icon(icon, color: color, size: 16),
               ),
+              const Spacer(),
               Icon(Icons.trending_up, color: color.withOpacity(0.6), size: 14),
             ],
           ),
           const SizedBox(height: 8),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: color,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 11,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 2),
-              Text(
-                value,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey[800],
-                  fontSize: 16,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 2),
-              Text(
-                subtitle,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.grey[600],
-                  fontSize: 9,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
+          Text(
+            title,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: color,
+              fontWeight: FontWeight.w600,
+              fontSize: 11,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 2),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: Colors.grey[800],
+              fontSize: 16,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 2),
+          Text(
+            subtitle,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Colors.grey[600],
+              fontSize: 9,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
@@ -265,10 +276,10 @@ class InventorySummaryCard extends ConsumerWidget {
         totalProducts > 0 ? totalValue / totalProducts : 0.0;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.grey[50],
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: Colors.grey[200]!),
       ),
       child: Column(
@@ -279,26 +290,27 @@ class InventorySummaryCard extends ConsumerWidget {
               Icon(
                 Icons.analytics_outlined,
                 color: Colors.indigo[600],
-                size: 20,
+                size: 16,
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
               Text(
                 'Análisis Rápido',
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w600,
                   color: Colors.indigo[800],
+                  fontSize: 12,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
 
           Row(
             children: [
               Expanded(
                 child: _buildAnalyticItem(
                   context,
-                  'Valor Promedio por Producto',
+                  'Valor Promedio',
                   NumberFormat.currency(
                     locale: 'es_ES',
                     symbol: '\$',
@@ -308,12 +320,12 @@ class InventorySummaryCard extends ConsumerWidget {
                   Colors.indigo,
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 12),
               Expanded(
                 child: _buildAnalyticItem(
                   context,
-                  'Estado del Inventario',
-                  stats['lowStockCount'] == 0 ? 'Óptimo' : 'Requiere Atención',
+                  'Estado',
+                  stats['lowStockCount'] == 0 ? 'Óptimo' : 'Atención',
                   stats['lowStockCount'] == 0
                       ? Icons.check_circle
                       : Icons.warning,
@@ -336,29 +348,36 @@ class InventorySummaryCard extends ConsumerWidget {
   ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
         Row(
           children: [
-            Icon(icon, color: color, size: 16),
-            const SizedBox(width: 6),
+            Icon(icon, color: color, size: 14),
+            const SizedBox(width: 4),
             Expanded(
               child: Text(
                 title,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Colors.grey[600],
                   fontWeight: FontWeight.w500,
+                  fontSize: 10,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 2),
         Text(
           value,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
             fontWeight: FontWeight.bold,
             color: color,
+            fontSize: 12,
           ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
       ],
     );
