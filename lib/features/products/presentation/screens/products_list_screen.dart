@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/providers/database_providers.dart';
 import '../../../../core/providers/reactive_providers.dart';
-import '../../../../core/services/image_service.dart';
 import '../../../../shared/widgets/barcode_search_button.dart';
 
 class ProductsListScreen extends ConsumerStatefulWidget {

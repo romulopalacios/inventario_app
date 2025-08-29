@@ -1,8 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:inventario_app/core/database/database.dart';
 import 'package:inventario_app/core/services/inventory_service.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:drift/drift.dart';
 
 void main() {
   group('Product Service Tests', () {

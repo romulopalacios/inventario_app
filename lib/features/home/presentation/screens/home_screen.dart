@@ -1,24 +1,119 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/providers/database_providers.dart';
+import '../../../../core/theme/app_theme_professional.dart';
+import '../../../../core/theme/mobile_responsive.dart';
+import '../../../../shared/widgets/gesture_navigation.dart';
 import '../../../../shared/widgets/sample_data_widget.dart';
 import '../../../reports/presentation/widgets/inventory_summary_card.dart';
 
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  void _handleGestureNavigation(GestureNavigationType type) {
+    switch (type) {
+      case GestureNavigationType.swipeLeft:
+        // Navegar a productos
+        context.go('/products');
+        break;
+      case GestureNavigationType.swipeUp:
+        // Navegar a reportes
+        context.go('/reports');
+        break;
+      case GestureNavigationType.swipeRight:
+        // Navegar hacia atrás si es posible
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context);
+        }
+        break;
+      case GestureNavigationType.doubleTap:
+        // Refrescar datos
+        ref.invalidate(lowStockProductsProvider);
+        ref.invalidate(inventoryStatsProvider);
+        break;
+      case GestureNavigationType.longPress:
+        // Mostrar menú contextual
+        _showContextMenu();
+        break;
+    }
+  }
+
+  void _showContextMenu() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.neutral50,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppRadius.large),
+        ),
+      ),
+      builder:
+          (context) => Container(
+            padding: EdgeInsets.all(context.isMobile ? 20 : 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  leading: Icon(Icons.refresh, color: AppColors.primary),
+                  title: Text('Refrescar datos'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    ref.invalidate(lowStockProductsProvider);
+                    ref.invalidate(inventoryStatsProvider);
+                  },
+                ),
+                ListTile(
+                  leading: Icon(Icons.settings, color: AppColors.secondary),
+                  title: Text('Configuración'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    context.go('/settings');
+                  },
+                ),
+              ],
+            ),
+          ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureNavigationWrapper(
+      onGestureNavigation: _handleGestureNavigation,
+      child: _buildContent(),
+    );
+  }
+
+  Widget _buildContent() {
     final lowStockProducts = ref.watch(lowStockProductsProvider);
 
     return Scaffold(
+      backgroundColor: AppColors.neutral50,
       appBar: AppBar(
-        title: const Text('Inventario Fácil'),
+        title: Text(
+          context.isMobile ? 'Inventario Fácil' : 'Inventario Profesional',
+          style: TextStyle(
+            fontFamily: 'Inter',
+            fontWeight: FontWeight.w700,
+            color: AppColors.neutral800,
+            fontSize: context.isMobile ? 18 : 20,
+          ),
+        ),
+        backgroundColor: AppColors.neutral50,
+        elevation: 0,
+        centerTitle: context.isMobile,
         actions: [
           IconButton(
-            icon: const Icon(Icons.settings),
             onPressed: () => context.go('/settings'),
+            icon: Icon(Icons.settings_outlined),
+            color: AppColors.neutral600,
           ),
         ],
       ),
@@ -27,69 +122,381 @@ class HomeScreen extends ConsumerWidget {
           ref.invalidate(lowStockProductsProvider);
           ref.invalidate(inventoryStatsProvider);
         },
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Sample data widget for empty state
-              const SampleDataWidget(),
+        child: GestureAwareListView(
+          padding: context.responsivePadding,
+          children: [
+            // Widget de datos de ejemplo
+            const SampleDataWidget(),
 
-              // Welcome section
-              Card(
+            SizedBox(height: context.isMobile ? AppSpacing.md : AppSpacing.lg),
+
+            // Tarjeta de bienvenida profesional
+            _buildWelcomeCard(),
+
+            SizedBox(height: context.isMobile ? AppSpacing.md : AppSpacing.lg),
+
+            // Resumen de inventario
+            const InventorySummaryCard(),
+
+            SizedBox(height: context.isMobile ? AppSpacing.md : AppSpacing.lg),
+
+            // Acciones rápidas profesionales
+            _buildQuickActions(),
+
+            SizedBox(height: context.isMobile ? AppSpacing.md : AppSpacing.lg),
+
+            // Productos con stock bajo
+            _buildLowStockSection(lowStockProducts),
+
+            SizedBox(height: AppSpacing.xl),
+          ],
+        ),
+      ),
+      bottomNavigationBar: context.isMobile ? _buildMobileBottomNav() : null,
+      floatingActionButton:
+          context.isMobile
+              ? FloatingActionButton(
+                onPressed: () => context.go('/products/add'),
+                backgroundColor: AppColors.primary,
+                child: Icon(Icons.add, color: Colors.white),
+              )
+              : null,
+    );
+  }
+
+  Widget _buildWelcomeCard() {
+    return InteractiveCard(
+      onTap: () => context.go('/reports'),
+      enableScaleAnimation: true,
+      child: Container(
+        padding: EdgeInsets.all(
+          context.isMobile ? AppSpacing.md : AppSpacing.lg,
+        ),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [AppColors.primary, AppColors.primaryDark],
+          ),
+          borderRadius: BorderRadius.circular(AppRadius.large),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.analytics_outlined,
+                  color: Colors.white,
+                  size: context.isMobile ? 28 : 32,
+                ),
+                SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Text(
+                    'Ver Reportes Detallados',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: context.isMobile ? 18 : 20,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: AppSpacing.sm),
+            Text(
+              'Accede a análisis completos de tu inventario',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Colors.white.withOpacity(0.9),
+                fontSize: context.isMobile ? 14 : 16,
+              ),
+            ),
+            SizedBox(height: AppSpacing.md),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Text(
+                  'Ir a reportes',
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                SizedBox(width: AppSpacing.xs),
+                Icon(
+                  Icons.arrow_forward_ios,
+                  color: Colors.white,
+                  size: context.isMobile ? 16 : 18,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickActions() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Acciones Rápidas',
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.w700,
+            color: AppColors.neutral800,
+            fontSize: context.isMobile ? 18 : 20,
+          ),
+        ),
+        SizedBox(height: AppSpacing.md),
+        ResponsiveWidget(
+          mobile: _buildMobileQuickActions(),
+          tablet: _buildDesktopQuickActions(),
+          desktop: _buildDesktopQuickActions(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMobileQuickActions() {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: _buildActionCard(
+                icon: Icons.add_box_outlined,
+                title: 'Agregar\nProducto',
+                color: AppColors.success,
+                onTap: () => context.go('/products/add'),
+              ),
+            ),
+            SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: _buildActionCard(
+                icon: Icons.inventory_2_outlined,
+                title: 'Ver\nProductos',
+                color: AppColors.info,
+                onTap: () => context.go('/products'),
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: AppSpacing.sm),
+        Row(
+          children: [
+            Expanded(
+              child: _buildActionCard(
+                icon: Icons.analytics_outlined,
+                title: 'Ver\nReportes',
+                color: AppColors.accent,
+                onTap: () => context.go('/reports'),
+              ),
+            ),
+            SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: _buildActionCard(
+                icon: Icons.settings_outlined,
+                title: 'Configuración',
+                color: AppColors.warning,
+                onTap: () => context.go('/settings'),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDesktopQuickActions() {
+    return Row(
+      children: [
+        Expanded(
+          child: _buildActionCard(
+            icon: Icons.add_box_outlined,
+            title: 'Agregar Producto',
+            color: AppColors.success,
+            onTap: () => context.go('/products/add'),
+          ),
+        ),
+        SizedBox(width: AppSpacing.md),
+        Expanded(
+          child: _buildActionCard(
+            icon: Icons.inventory_2_outlined,
+            title: 'Ver Productos',
+            color: AppColors.info,
+            onTap: () => context.go('/products'),
+          ),
+        ),
+        SizedBox(width: AppSpacing.md),
+        Expanded(
+          child: _buildActionCard(
+            icon: Icons.analytics_outlined,
+            title: 'Ver Reportes',
+            color: AppColors.accent,
+            onTap: () => context.go('/reports'),
+          ),
+        ),
+        SizedBox(width: AppSpacing.md),
+        Expanded(
+          child: _buildActionCard(
+            icon: Icons.settings_outlined,
+            title: 'Configuración',
+            color: AppColors.warning,
+            onTap: () => context.go('/settings'),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActionCard({
+    required IconData icon,
+    required String title,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    final isMobile = context.isMobile;
+
+    return InteractiveCard(
+      onTap: onTap,
+      enableScaleAnimation: true,
+      child: Container(
+        padding: EdgeInsets.all(isMobile ? AppSpacing.sm : AppSpacing.lg),
+        child: Column(
+          children: [
+            Container(
+              padding: EdgeInsets.all(isMobile ? AppSpacing.sm : AppSpacing.md),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(AppRadius.large),
+              ),
+              child: Icon(icon, size: isMobile ? 24 : 32, color: color),
+            ),
+            SizedBox(height: AppSpacing.xs),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: AppColors.neutral800,
+                fontSize: isMobile ? 12 : 14,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLowStockSection(AsyncValue<List<dynamic>> lowStockProducts) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Productos con Stock Bajo',
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.w700,
+            color: AppColors.neutral800,
+            fontSize: context.isMobile ? 18 : 20,
+          ),
+        ),
+        SizedBox(height: AppSpacing.md),
+        lowStockProducts.when(
+          data: (products) {
+            if (products.isEmpty) {
+              return Card(
                 child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  padding: EdgeInsets.all(
+                    context.isMobile ? AppSpacing.md : AppSpacing.lg,
+                  ),
+                  child: Row(
                     children: [
-                      Text(
-                        'Bienvenido',
-                        style: Theme.of(context).textTheme.headlineSmall
-                            ?.copyWith(fontWeight: FontWeight.bold),
+                      Icon(
+                        Icons.check_circle,
+                        color: AppColors.success,
+                        size: 24,
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Gestiona tu inventario de forma fácil y eficiente',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.grey[600],
+                      SizedBox(width: AppSpacing.md),
+                      Expanded(
+                        child: Text(
+                          'Todos los productos tienen stock suficiente',
+                          style: TextStyle(color: AppColors.neutral700),
                         ),
                       ),
                     ],
                   ),
                 ),
-              ),
-
-              const SizedBox(height: 16),
-
-              // Reporte mejorado con InventorySummaryCard
-              const InventorySummaryCard(),
-
-              const SizedBox(height: 16),
-
-              // Low stock alerts
-              lowStockProducts.when(
-                data: (products) => _buildLowStockSection(context, products),
-                loading:
-                    () => const Card(
-                      child: Padding(
-                        padding: EdgeInsets.all(16),
-                        child: Center(child: CircularProgressIndicator()),
-                      ),
+              );
+            }
+            return ListView.separated(
+              shrinkWrap: true,
+              physics: NeverScrollableScrollPhysics(),
+              itemCount: products.length > 5 ? 5 : products.length,
+              separatorBuilder: (_, __) => SizedBox(height: AppSpacing.sm),
+              itemBuilder: (context, index) {
+                final product = products[index];
+                return Card(
+                  child: ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: AppColors.warning.withOpacity(0.1),
+                      child: Icon(Icons.warning, color: AppColors.warning),
                     ),
-                error:
-                    (error, stackTrace) => Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Text('Error al cargar alertas: $error'),
-                      ),
-                    ),
+                    title: Text(product.toString()),
+                    subtitle: Text('Stock bajo'),
+                    trailing: Icon(Icons.arrow_forward_ios, size: 16),
+                    onTap: () => context.go('/products'),
+                  ),
+                );
+              },
+            );
+          },
+          loading: () => Center(child: CircularProgressIndicator()),
+          error: (error, stack) => Text('Error: $error'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMobileBottomNav() {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.neutral50,
+        border: Border(top: BorderSide(color: AppColors.neutral200, width: 1)),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.neutral800.withOpacity(0.1),
+            blurRadius: 8,
+            offset: Offset(0, -2),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        child: Container(
+          height: 60,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildNavItem(Icons.home, 'Inicio', true, () => context.go('/')),
+              _buildNavItem(
+                Icons.inventory_2_outlined,
+                'Productos',
+                false,
+                () => context.go('/products'),
               ),
-
-              const SizedBox(height: 16),
-
-              // Quick actions
-              _buildQuickActions(context),
+              _buildNavItem(
+                Icons.analytics_outlined,
+                'Reportes',
+                false,
+                () => context.go('/reports'),
+              ),
+              _buildNavItem(
+                Icons.settings_outlined,
+                'Ajustes',
+                false,
+                () => context.go('/settings'),
+              ),
             ],
           ),
         ),
@@ -97,152 +504,39 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildLowStockSection(BuildContext context, List<dynamic> products) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.warning, color: Colors.orange),
-                const SizedBox(width: 8),
-                Text(
-                  'Alertas de Stock Bajo',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            if (products.isEmpty)
-              Text(
-                'No hay productos con stock bajo',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
-              )
-            else
-              ...products
-                  .take(5)
-                  .map(
-                    (product) => ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: CircleAvatar(
-                        backgroundColor: Colors.orange.withOpacity(0.2),
-                        child: Text(
-                          product.name[0].toUpperCase(),
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.orange,
-                          ),
-                        ),
-                      ),
-                      title: Text(product.name),
-                      subtitle: Text(
-                        'Stock: ${product.stock} | Mínimo: ${product.minStock}',
-                      ),
-                      trailing: TextButton(
-                        onPressed:
-                            () => context.go('/products/${product.uuid}'),
-                        child: const Text('Ver'),
-                      ),
-                    ),
-                  ),
-            if (products.length > 5)
-              TextButton(
-                onPressed: () => context.go('/products'),
-                child: Text('Ver todos (${products.length})'),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildQuickActions(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Acciones Rápidas',
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildActionCard(
-                    context,
-                    'Productos',
-                    'Ver y gestionar',
-                    Icons.inventory_2,
-                    Colors.blue,
-                    () => context.go('/products'),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildActionCard(
-                    context,
-                    'Reportes',
-                    'Exportar datos',
-                    Icons.bar_chart,
-                    Colors.green,
-                    () => context.go('/reports'),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildActionCard(
-    BuildContext context,
-    String title,
-    String subtitle,
+  Widget _buildNavItem(
     IconData icon,
-    Color color,
+    String label,
+    bool isActive,
     VoidCallback onTap,
   ) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: color.withOpacity(0.3)),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: color, size: 32),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              style: Theme.of(
-                context,
-              ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            Text(
-              subtitle,
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
-              textAlign: TextAlign.center,
-            ),
-          ],
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onTap();
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 24,
+                color: isActive ? AppColors.primary : AppColors.neutral500,
+              ),
+              const SizedBox(height: 2),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                  color: isActive ? AppColors.primary : AppColors.neutral500,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

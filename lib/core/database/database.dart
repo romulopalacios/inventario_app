@@ -1,8 +1,5 @@
-import 'dart:io';
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:path/path.dart' as p;
 
 // Importar todas las tablas
 part 'database.g.dart';
@@ -168,6 +165,20 @@ class AppDatabase extends _$AppDatabase {
   Future<List<StockMovement>> getAllStockMovements() {
     return (select(stockMovements)
       ..orderBy([(tbl) => OrderingTerm.desc(tbl.createdAt)])).get();
+  }
+
+  Future<List<StockMovement>> getStockMovementsByPeriod(
+    DateTime desde,
+    DateTime hasta,
+  ) {
+    return (select(stockMovements)
+          ..where(
+            (tbl) =>
+                tbl.createdAt.isBiggerOrEqualValue(desde) &
+                tbl.createdAt.isSmallerOrEqualValue(hasta),
+          )
+          ..orderBy([(tbl) => OrderingTerm.desc(tbl.createdAt)]))
+        .get();
   }
 
   // Settings queries

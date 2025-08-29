@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
@@ -9,9 +8,6 @@ class ImageService {
   static final ImagePicker _picker = ImagePicker();
   static const int maxImageSize = 1024; // Max width/height
   static const int jpegQuality = 85; // Calidad JPEG (0-100)
-
-  // Referencia al container global para invalidación
-  static ProviderContainer? _container;
 
   /// Seleccionar imagen desde cámara o galería
   static Future<String?> pickImage({
@@ -193,8 +189,9 @@ class ImageService {
   static String formatFileSize(int bytes) {
     if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
-    if (bytes < 1024 * 1024 * 1024)
+    if (bytes < 1024 * 1024 * 1024) {
       return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    }
     return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
   }
 }

@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/providers/database_providers.dart';
 import '../../../../core/providers/reactive_providers.dart';
-import '../../../../core/services/image_service.dart';
 import '../../../../core/services/inventory_service.dart';
 import '../../../../shared/widgets/confirmation_dialog.dart';
 import '../../../../shared/widgets/product_image_gallery.dart';
