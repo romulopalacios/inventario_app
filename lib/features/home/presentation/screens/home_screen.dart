@@ -8,6 +8,10 @@ import '../../../../core/theme/mobile_responsive.dart';
 import '../../../../shared/widgets/gesture_navigation.dart';
 import '../../../../shared/widgets/sample_data_widget.dart';
 import '../../../reports/presentation/widgets/inventory_summary_card.dart';
+import '../../../../core/utils/logger.dart';
+import '../../../../core/utils/debug_tools.dart';
+import '../../../../core/utils/safe_navigation.dart';
+import '../../../../core/widgets/debug_overlay.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -17,7 +21,23 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    Logger.init('HomeScreen initialized');
+    DebugTools.startTimer('HomeScreen-build');
+  }
+
+  @override
+  void dispose() {
+    DebugTools.stopTimer('HomeScreen-build');
+    Logger.debug('HomeScreen disposed');
+    super.dispose();
+  }
+
   void _handleGestureNavigation(GestureNavigationType type) {
+    Logger.navigation('HomeScreen', 'Gesture: ${type.name}');
+
     switch (type) {
       case GestureNavigationType.swipeLeft:
         // Navegar a productos
@@ -28,10 +48,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         context.go('/reports');
         break;
       case GestureNavigationType.swipeRight:
-        // Navegar hacia atrás si es posible
-        if (Navigator.canPop(context)) {
-          Navigator.pop(context);
-        }
+        // Navegar hacia atrás si es posible usando navegación segura
+        SafeNavigation.handleBackButton(
+          context,
+          reason: 'Swipe right gesture detected',
+        );
         break;
       case GestureNavigationType.doubleTap:
         // Refrescar datos
@@ -64,17 +85,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   leading: Icon(Icons.refresh, color: AppColors.primary),
                   title: Text('Refrescar datos'),
                   onTap: () {
-                    Navigator.pop(context);
+                    Logger.debug('🔄 Refresh data requested');
+                    _safeNavigatorPop();
                     ref.invalidate(lowStockProductsProvider);
                     ref.invalidate(inventoryStatsProvider);
+                    Logger.success('✨ Data refreshed successfully');
                   },
                 ),
                 ListTile(
                   leading: Icon(Icons.settings, color: AppColors.secondary),
                   title: Text('Configuración'),
                   onTap: () {
-                    Navigator.pop(context);
-                    context.go('/settings');
+                    Logger.debug('⚙️ Settings navigation requested');
+                    _safeNavigatorPop();
+                    SafeNavigation.safeGo(
+                      context,
+                      '/settings',
+                      reason: 'Settings menu item tapped',
+                    );
                   },
                 ),
               ],
@@ -85,9 +113,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return GestureNavigationWrapper(
-      onGestureNavigation: _handleGestureNavigation,
-      child: _buildContent(),
+    Logger.debug('HomeScreen building...');
+
+    return PopScope(
+      canPop: false, // We'll handle the pop manually
+      onPopInvokedWithResult: (didPop, result) async {
+        if (!didPop) {
+          await SafeNavigation.handleBackButton(
+            context,
+            reason: 'Android back button pressed',
+          );
+        }
+      },
+      child: DebugOverlay(
+        child: GestureNavigationWrapper(
+          onGestureNavigation: _handleGestureNavigation,
+          child: _buildContent(),
+        ),
+      ),
     );
   }
 
@@ -458,7 +501,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
+  // Safe navigation helper method
+  void _safeNavigatorPop() {
+    SafeNavigation.safePop(context, reason: 'Modal/Dialog close requested');
+  }
+
   Widget _buildMobileBottomNav() {
+    Logger.info('📱 Building mobile bottom navigation');
     return Container(
       decoration: BoxDecoration(
         color: AppColors.neutral50,
@@ -473,8 +522,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
       child: SafeArea(
         child: Container(
-          height: 60,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          constraints: BoxConstraints(minHeight: 56, maxHeight: 64),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
@@ -514,25 +563,32 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       child: GestureDetector(
         onTap: () {
           HapticFeedback.lightImpact();
+          Logger.debug('🔘 Navigation item tapped: $label');
           onTap();
         },
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 4),
+          padding: const EdgeInsets.symmetric(vertical: 2),
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
                 icon,
-                size: 24,
+                size: 22,
                 color: isActive ? AppColors.primary : AppColors.neutral500,
               ),
-              const SizedBox(height: 2),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
-                  color: isActive ? AppColors.primary : AppColors.neutral500,
+              const SizedBox(height: 1),
+              Flexible(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                    color: isActive ? AppColors.primary : AppColors.neutral500,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],

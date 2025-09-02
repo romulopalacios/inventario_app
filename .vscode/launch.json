@@ -1,0 +1,52 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug Mobile App",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "args": ["--debug", "--verbose"],
+      "console": "debugConsole",
+      "deviceId": "2201117SL"
+    },
+    {
+      "name": "Debug Desktop App",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "args": ["--debug", "--verbose"],
+      "console": "debugConsole",
+      "deviceId": "windows"
+    },
+    {
+      "name": "Profile Mobile App",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "args": ["--profile"],
+      "console": "debugConsole",
+      "deviceId": "2201117SL",
+      "flutterMode": "profile"
+    },
+    {
+      "name": "Release Mobile App",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "args": ["--release"],
+      "console": "debugConsole",
+      "deviceId": "2201117SL",
+      "flutterMode": "release"
+    },
+    {
+      "name": "Debug Web App",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "args": ["--debug", "--web-renderer", "canvaskit"],
+      "console": "debugConsole",
+      "deviceId": "chrome"
+    }
+  ]
+}

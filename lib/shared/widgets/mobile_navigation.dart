@@ -2,16 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_theme_professional.dart';
 import '../../core/theme/mobile_responsive.dart';
+import '../../core/utils/logger.dart';
+import '../../core/utils/safe_navigation.dart';
 
-/// Bottom Navigation Bar optimizado para móviles
+/// Bottom Navigation Bar optimizado para móviles con detección automática de ruta
 class MobileBottomNavigation extends StatelessWidget {
-  final int currentIndex;
-  final Function(int) onTap;
+  final String? currentRoute;
+  final VoidCallback? onBackPressed;
 
   const MobileBottomNavigation({
     super.key,
-    required this.currentIndex,
-    required this.onTap,
+    this.currentRoute,
+    this.onBackPressed,
   });
 
   @override
@@ -19,6 +21,10 @@ class MobileBottomNavigation extends StatelessWidget {
     if (!context.isMobile) {
       return const SizedBox.shrink(); // No mostrar en desktop/tablet
     }
+
+    Logger.debug(
+      '📱 Building MobileBottomNavigation for route: ${currentRoute ?? "unknown"}',
+    );
 
     return Container(
       decoration: BoxDecoration(
@@ -28,14 +34,13 @@ class MobileBottomNavigation extends StatelessWidget {
       ),
       child: SafeArea(
         child: Container(
-          height: 60,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          constraints: BoxConstraints(minHeight: 56, maxHeight: 64),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _buildNavItem(
                 context,
-                index: 0,
                 icon: Icons.home_outlined,
                 activeIcon: Icons.home,
                 label: 'Inicio',
@@ -43,7 +48,6 @@ class MobileBottomNavigation extends StatelessWidget {
               ),
               _buildNavItem(
                 context,
-                index: 1,
                 icon: Icons.inventory_2_outlined,
                 activeIcon: Icons.inventory_2,
                 label: 'Productos',
@@ -51,7 +55,6 @@ class MobileBottomNavigation extends StatelessWidget {
               ),
               _buildNavItem(
                 context,
-                index: 2,
                 icon: Icons.analytics_outlined,
                 activeIcon: Icons.analytics,
                 label: 'Reportes',
@@ -59,7 +62,6 @@ class MobileBottomNavigation extends StatelessWidget {
               ),
               _buildNavItem(
                 context,
-                index: 3,
                 icon: Icons.settings_outlined,
                 activeIcon: Icons.settings,
                 label: 'Ajustes',
@@ -74,37 +76,46 @@ class MobileBottomNavigation extends StatelessWidget {
 
   Widget _buildNavItem(
     BuildContext context, {
-    required int index,
     required IconData icon,
     required IconData activeIcon,
     required String label,
     required String route,
   }) {
-    final isActive = currentIndex == index;
+    final isActive = _isRouteActive(route);
 
     return Expanded(
       child: GestureDetector(
         onTap: () {
-          onTap(index);
-          context.go(route);
+          Logger.debug('🔘 Navigation item tapped: $label -> $route');
+          SafeNavigation.safeGo(
+            context,
+            route,
+            reason: 'Bottom navigation: $label',
+          );
         },
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 4),
+          padding: const EdgeInsets.symmetric(vertical: 2),
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
                 isActive ? activeIcon : icon,
-                size: 24,
+                size: 22,
                 color: isActive ? AppColors.primary : AppColors.neutral500,
               ),
-              const SizedBox(height: 2),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
-                  color: isActive ? AppColors.primary : AppColors.neutral500,
+              const SizedBox(height: 1),
+              Flexible(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                    color: isActive ? AppColors.primary : AppColors.neutral500,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
@@ -112,6 +123,18 @@ class MobileBottomNavigation extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  bool _isRouteActive(String route) {
+    if (currentRoute == null) return false;
+
+    // Exact match for home
+    if (route == '/' && currentRoute == '/') return true;
+
+    // Prefix match for other routes
+    if (route != '/' && currentRoute!.startsWith(route)) return true;
+
+    return false;
   }
 }
 

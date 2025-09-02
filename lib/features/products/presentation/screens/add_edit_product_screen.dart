@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/services/inventory_service.dart';
 import '../../../../core/services/barcode_scanner_service.dart';
 import '../../../../core/providers/database_providers.dart';
 import '../../../../shared/widgets/category_dropdown.dart';
 import '../../../../shared/widgets/product_image_gallery.dart';
+import '../../../../shared/widgets/mobile_navigation.dart';
 
 class AddEditProductScreen extends ConsumerStatefulWidget {
   final String? productId;
@@ -379,6 +381,9 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
             ],
           ),
         ),
+      ),
+      bottomNavigationBar: MobileBottomNavigation(
+        currentRoute: GoRouterState.of(context).fullPath,
       ),
     );
   }

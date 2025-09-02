@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../../../core/providers/database_providers.dart';
 import '../../../../core/providers/reactive_providers.dart';
 import '../../../../shared/widgets/barcode_search_button.dart';
+import '../../../../shared/widgets/mobile_navigation.dart';
 
 class ProductsListScreen extends ConsumerStatefulWidget {
   const ProductsListScreen({super.key});
@@ -76,6 +77,9 @@ class _ProductsListScreenState extends ConsumerState<ProductsListScreen> {
         floatingActionButton: FloatingActionButton(
           onPressed: () => context.go('/products/add'),
           child: const Icon(Icons.add),
+        ),
+        bottomNavigationBar: MobileBottomNavigation(
+          currentRoute: GoRouterState.of(context).fullPath,
         ),
       ),
     );

@@ -8,6 +8,7 @@ import '../../../../core/providers/reactive_providers.dart';
 import '../../../../core/services/inventory_service.dart';
 import '../../../../shared/widgets/confirmation_dialog.dart';
 import '../../../../shared/widgets/product_image_gallery.dart';
+import '../../../../shared/widgets/mobile_navigation.dart';
 
 class ProductDetailScreen extends ConsumerWidget {
   final String productId;
@@ -108,6 +109,9 @@ class ProductDetailScreen extends ConsumerWidget {
                 ],
               ),
             ),
+      ),
+      bottomNavigationBar: MobileBottomNavigation(
+        currentRoute: GoRouterState.of(context).fullPath,
       ),
     );
   }

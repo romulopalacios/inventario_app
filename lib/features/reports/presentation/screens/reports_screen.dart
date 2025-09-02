@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/providers/reactive_providers.dart';
 import '../../../../core/theme/app_theme_professional.dart';
+import '../../../../core/utils/logger.dart';
+import '../../../../core/utils/safe_navigation.dart';
 import '../../../../shared/widgets/app_components.dart';
 import '../../../../shared/widgets/gesture_navigation.dart';
+import '../../../../shared/widgets/mobile_navigation.dart';
 import '../widgets/financial_summary_card.dart';
 import '../widgets/sales_chart_widget.dart';
 import '../widgets/category_pie_chart.dart';
@@ -32,7 +36,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
   void _handleGestureNavigation(GestureNavigationType type) {
     switch (type) {
       case GestureNavigationType.swipeRight:
-        Navigator.pop(context);
+        SafeNavigation.safePop(context, reason: 'Reports screen swipe back');
         break;
       case GestureNavigationType.doubleTap:
         final params = <String, DateTime?>{
@@ -92,6 +96,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
 
   @override
   Widget build(BuildContext context) {
+    Logger.debug('📊 Building ReportsScreen with responsive layout');
     return GestureNavigationWrapper(
       onGestureNavigation: _handleGestureNavigation,
       child: _buildContent(),
@@ -99,6 +104,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
   }
 
   Widget _buildContent() {
+    Logger.debug('🏗️ Building reports content with overflow fixes applied');
     final theme = Theme.of(context);
     final financialParams = <String, DateTime?>{
       'desde': _startDate,
@@ -122,7 +128,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
               leading: HapticButton(
                 onPressed: () {
                   HapticFeedback.lightImpact();
-                  Navigator.pop(context);
+                  SafeNavigation.safePop(
+                    context,
+                    reason: 'Reports screen back button',
+                  );
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.transparent,
@@ -152,15 +161,22 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
                             ),
                           ),
                           child: Padding(
-                            padding: AppSpacing.all(AppSpacing.lg),
+                            padding: AppSpacing.all(
+                              AppSpacing.md,
+                            ), // Reduced from lg
                             child: Column(
-                              mainAxisAlignment: MainAxisAlignment.end,
+                              mainAxisAlignment:
+                                  MainAxisAlignment.center, // Changed from end
+                              mainAxisSize:
+                                  MainAxisSize.min, // Added to prevent overflow
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Row(
                                   children: [
                                     Container(
-                                      padding: AppSpacing.all(AppSpacing.md),
+                                      padding: AppSpacing.all(
+                                        AppSpacing.sm,
+                                      ), // Reduced from md
                                       decoration: BoxDecoration(
                                         color: AppColors.primary.withOpacity(
                                           0.1,
@@ -172,33 +188,44 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
                                       child: Icon(
                                         Icons.analytics_outlined,
                                         color: AppColors.primary,
-                                        size: AppIconSize.lg,
+                                        size: AppIconSize.md, // Reduced from lg
                                       ),
                                     ),
-                                    SizedBox(width: AppSpacing.md),
+                                    SizedBox(
+                                      width: AppSpacing.sm,
+                                    ), // Reduced from md
                                     Expanded(
                                       child: Column(
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
+                                        mainAxisSize: MainAxisSize.min, // Added
                                         children: [
                                           Text(
                                             'Reportes Profesionales',
                                             style: theme
                                                 .textTheme
-                                                .headlineMedium
+                                                .headlineSmall // Reduced from headlineMedium
                                                 ?.copyWith(
                                                   fontWeight: FontWeight.w700,
                                                   color: AppColors.neutral800,
                                                   letterSpacing: -0.5,
                                                 ),
+                                            maxLines: 1, // Added
+                                            overflow:
+                                                TextOverflow.ellipsis, // Added
                                           ),
                                           SizedBox(height: AppSpacing.xs),
                                           Text(
                                             'Análisis completo de tu inventario',
-                                            style: theme.textTheme.bodyMedium
+                                            style: theme
+                                                .textTheme
+                                                .bodySmall // Reduced from bodyMedium
                                                 ?.copyWith(
                                                   color: AppColors.neutral600,
                                                 ),
+                                            maxLines: 2, // Added
+                                            overflow:
+                                                TextOverflow.ellipsis, // Added
                                           ),
                                         ],
                                       ),
@@ -206,7 +233,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
                                     _buildDateRangeButton(context),
                                   ],
                                 ),
-                                SizedBox(height: AppSpacing.lg),
+                                SizedBox(
+                                  height: AppSpacing.sm,
+                                ), // Reduced from lg
                                 _buildPeriodDisplay(theme),
                               ],
                             ),
@@ -271,6 +300,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
             ),
           ],
         ),
+      ),
+      bottomNavigationBar: MobileBottomNavigation(
+        currentRoute: GoRouterState.of(context).fullPath,
       ),
     );
   }

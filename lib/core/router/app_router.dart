@@ -1,4 +1,6 @@
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../utils/logger.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/home/presentation/screens/home_screen.dart';
 import '../../features/products/presentation/screens/products_list_screen.dart';
@@ -10,6 +12,28 @@ import '../../features/settings/presentation/screens/settings_screen.dart';
 
 final goRouter = GoRouter(
   initialLocation: '/',
+  debugLogDiagnostics: true,
+  errorBuilder: (context, state) {
+    Logger.error('🚨 Router error: ${state.error}');
+    return Scaffold(
+      appBar: AppBar(title: const Text('Error de Navegación')),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, size: 64, color: Colors.red),
+            const SizedBox(height: 16),
+            Text('Error de navegación: ${state.error}'),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () => context.go('/'),
+              child: const Text('Volver al Inicio'),
+            ),
+          ],
+        ),
+      ),
+    );
+  },
   routes: [
     // Auth routes
     GoRoute(

@@ -3,6 +3,12 @@ allprojects {
         google()
         mavenCentral()
     }
+    
+    // Configuración global para suprimir warnings de Java
+    tasks.withType<JavaCompile> {
+        options.compilerArgs.addAll(listOf("-Xlint:-options"))
+        options.isWarnings = false
+    }
 }
 
 val newBuildDir: Directory = rootProject.layout.buildDirectory.dir("../../build").get()
