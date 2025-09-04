@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../core/utils/safe_navigation.dart';
 
 /// Tipo de navegación por gestos disponibles
 enum GestureNavigationType {
@@ -148,9 +149,10 @@ mixin GestureNavigationMixin<T extends StatefulWidget> on State<T> {
   ) {
     switch (type) {
       case GestureNavigationType.swipeRight:
-        if (Navigator.canPop(context)) {
-          Navigator.pop(context);
-        }
+        SafeNavigation.safePop(
+          context,
+          reason: 'Gesture navigation - swipe right',
+        );
         break;
       case GestureNavigationType.swipeLeft:
         // Navigator.pushNamed(context, '/products');

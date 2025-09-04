@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import '../../core/theme/app_theme_professional.dart';
 import '../../core/theme/mobile_responsive.dart';
 import '../../core/utils/logger.dart';
@@ -176,7 +175,12 @@ class MobileAppBar extends StatelessWidget implements PreferredSizeWidget {
                   color: AppColors.neutral700,
                   size: 20,
                 ),
-                onPressed: onBackPressed ?? () => Navigator.pop(context),
+                onPressed:
+                    onBackPressed ??
+                    () => SafeNavigation.safePop(
+                      context,
+                      reason: 'Mobile navigation back button',
+                    ),
               )
               : null,
       actions: actions,
@@ -359,8 +363,11 @@ class MobileDrawer extends StatelessWidget {
         ),
       ),
       onTap: () {
-        Navigator.pop(context);
-        context.go(route);
+        SafeNavigation.safeGo(
+          context,
+          route,
+          reason: 'Mobile navigation menu selection',
+        );
       },
       contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
     );

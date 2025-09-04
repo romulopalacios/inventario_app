@@ -5,8 +5,11 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/providers/database_providers.dart';
 import '../../../../core/providers/reactive_providers.dart';
+import '../../../../core/theme/app_theme_professional.dart';
 import '../../../../shared/widgets/barcode_search_button.dart';
 import '../../../../shared/widgets/mobile_navigation.dart';
+import '../../../../shared/widgets/enhanced_ui_components.dart';
+import '../../../../core/utils/safe_navigation.dart';
 
 class ProductsListScreen extends ConsumerStatefulWidget {
   const ProductsListScreen({super.key});
@@ -38,8 +41,9 @@ class _ProductsListScreenState extends ConsumerState<ProductsListScreen> {
         context.go('/');
       },
       child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Productos'),
+        backgroundColor: AppColors.neutral50,
+        appBar: EnhancedUIComponents.enhancedAppBar(
+          title: 'Productos',
           actions: [
             BarcodeSearchButton(
               onCodeScanned: (code) {
@@ -48,10 +52,7 @@ class _ProductsListScreenState extends ConsumerState<ProductsListScreen> {
               },
               tooltip: 'Buscar por código de barras',
             ),
-            IconButton(
-              icon: const Icon(Icons.search),
-              onPressed: () => _showSearchDialog(context),
-            ),
+            const SizedBox(width: 8),
           ],
         ),
         body: Column(
@@ -61,8 +62,30 @@ class _ProductsListScreenState extends ConsumerState<ProductsListScreen> {
               data:
                   (categoriesList) =>
                       _buildCategoryFilter(categoriesList, selectedCategory),
-              loading: () => const LinearProgressIndicator(),
+              loading: () => EnhancedUIComponents.enhancedLoading(),
               error: (error, stackTrace) => Container(),
+            ),
+
+            // Search Field
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: EnhancedUIComponents.enhancedSearchField(
+                controller: _searchController,
+                hintText: 'Buscar productos por nombre o código...',
+                onChanged: (value) {
+                  if (value.isNotEmpty) {
+                    ref
+                        .read(productSearchProvider.notifier)
+                        .searchProducts(value);
+                  } else {
+                    setState(() {});
+                  }
+                },
+                onClear: () {
+                  _searchController.clear();
+                  setState(() {});
+                },
+              ),
             ),
 
             // Products list
@@ -74,9 +97,11 @@ class _ProductsListScreenState extends ConsumerState<ProductsListScreen> {
             ),
           ],
         ),
-        floatingActionButton: FloatingActionButton(
+        floatingActionButton: EnhancedUIComponents.enhancedFloatingButton(
           onPressed: () => context.go('/products/add'),
-          child: const Icon(Icons.add),
+          icon: Icons.add,
+          label: 'Agregar Producto',
+          isExtended: true,
         ),
         bottomNavigationBar: MobileBottomNavigation(
           currentRoute: GoRouterState.of(context).fullPath,
@@ -90,34 +115,33 @@ class _ProductsListScreenState extends ConsumerState<ProductsListScreen> {
     String? selectedCategory,
   ) {
     return Container(
-      height: 50,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      height: 56,
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: ListView(
         scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         children: [
-          FilterChip(
-            label: const Text('Todos'),
-            selected: selectedCategory == null,
-            onSelected: (selected) {
-              if (selected) {
-                ref.read(selectedCategoryProvider.notifier).state = null;
-              }
+          EnhancedUIComponents.enhancedFilterChip(
+            label: 'Todos',
+            icon: Icons.apps,
+            isSelected: selectedCategory == null,
+            onTap: () {
+              ref.read(selectedCategoryProvider.notifier).state = null;
             },
           ),
-          const SizedBox(width: 8),
-          ...categories.map(
-            (category) => Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: FilterChip(
-                label: Text(category.name),
-                selected: selectedCategory == category.name,
-                onSelected: (selected) {
-                  ref.read(selectedCategoryProvider.notifier).state =
-                      selected ? category.name : null;
-                },
-              ),
-            ),
-          ),
+          ...categories
+              .map(
+                (category) => EnhancedUIComponents.enhancedFilterChip(
+                  label: category.name,
+                  icon: Icons.category_outlined,
+                  isSelected: selectedCategory == category.name,
+                  onTap: () {
+                    ref.read(selectedCategoryProvider.notifier).state =
+                        category.name;
+                  },
+                ),
+              )
+              .toList(),
         ],
       ),
     );
@@ -144,7 +168,7 @@ class _ProductsListScreenState extends ConsumerState<ProductsListScreen> {
           ),
         );
       },
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => EnhancedUIComponents.enhancedLoading(),
       error:
           (error, stackTrace) => Center(
             child: Column(
@@ -189,7 +213,7 @@ class _ProductsListScreenState extends ConsumerState<ProductsListScreen> {
           },
         );
       },
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => EnhancedUIComponents.enhancedLoading(),
       error:
           (error, stackTrace) =>
               Center(child: Text('Error en la búsqueda: $error')),
@@ -200,145 +224,190 @@ class _ProductsListScreenState extends ConsumerState<ProductsListScreen> {
     final formatter = NumberFormat.currency(locale: 'es_ES', symbol: '\$');
     final isLowStock = product.stock <= product.minStock;
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor:
-              isLowStock
-                  ? Colors.red.withOpacity(0.2)
-                  : Colors.blue.withOpacity(0.2),
-          child: FutureBuilder<List<String>>(
-            future: ref.watch(productImagesProvider(product.uuid).future),
-            builder: (context, snapshot) {
-              if (snapshot.hasData && snapshot.data!.isNotEmpty) {
-                return ClipOval(
-                  child: Image.file(
-                    File(snapshot.data!.first),
-                    width: 40,
-                    height: 40,
-                    fit: BoxFit.cover,
-                    errorBuilder:
-                        (context, error, stackTrace) => Text(
-                          product.name[0].toUpperCase(),
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: isLowStock ? Colors.red : Colors.blue,
-                          ),
-                        ),
-                  ),
-                );
-              } else {
-                return Text(
-                  product.name[0].toUpperCase(),
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: isLowStock ? Colors.red : Colors.blue,
-                  ),
-                );
-              }
-            },
-          ),
-        ),
-        title: Text(
-          product.name,
-          style: const TextStyle(fontWeight: FontWeight.w600),
-        ),
-        subtitle: Column(
+    return EnhancedUIComponents.enhancedCard(
+      onTap: () => SafeNavigation.safeGo(context, '/products/${product.uuid}'),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (product.code != null) Text('Código: ${product.code}'),
-            Text('Stock: ${product.stock}'),
-            Text('Precio: ${formatter.format(product.salePrice)}'),
-          ],
-        ),
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (isLowStock) Icon(Icons.warning, color: Colors.red, size: 20),
-            if (product.category != null)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Colors.grey.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(12),
+            Row(
+              children: [
+                // Product Avatar/Image
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color:
+                        isLowStock
+                            ? AppColors.error.withValues(alpha: 0.1)
+                            : AppColors.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: FutureBuilder<List<String>>(
+                    future: ref.watch(
+                      productImagesProvider(product.uuid).future,
+                    ),
+                    builder: (context, snapshot) {
+                      if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+                        return ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.file(
+                            File(snapshot.data!.first),
+                            fit: BoxFit.cover,
+                            errorBuilder:
+                                (context, error, stackTrace) => Icon(
+                                  Icons.inventory_2_outlined,
+                                  color:
+                                      isLowStock
+                                          ? AppColors.error
+                                          : AppColors.primary,
+                                  size: 28,
+                                ),
+                          ),
+                        );
+                      } else {
+                        return Icon(
+                          Icons.inventory_2_outlined,
+                          color:
+                              isLowStock ? AppColors.error : AppColors.primary,
+                          size: 28,
+                        );
+                      }
+                    },
+                  ),
                 ),
-                child: Text(
-                  product.category,
-                  style: const TextStyle(fontSize: 12),
+                const SizedBox(width: 16),
+
+                // Product Info
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              product.name,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.neutral800,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (isLowStock)
+                            EnhancedUIComponents.enhancedStatusBadge(
+                              label: 'Stock Bajo',
+                              color: AppColors.error,
+                              icon: Icons.warning_outlined,
+                            ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 4),
+
+                      if (product.code != null)
+                        Text(
+                          'Código: ${product.code}',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: AppColors.neutral600,
+                          ),
+                        ),
+
+                      const SizedBox(height: 8),
+
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.inventory_outlined,
+                            size: 16,
+                            color: AppColors.neutral500,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Stock: ${product.stock}',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: AppColors.neutral600,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Icon(
+                            Icons.monetization_on_outlined,
+                            size: 16,
+                            color: AppColors.success,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            formatter.format(product.salePrice),
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: AppColors.success,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+
+            // Category Badge (if exists)
+            if (product.category != null) ...[
+              EnhancedUIComponents.enhancedDivider(height: 12),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.neutral200,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    product.category,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.neutral700,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                 ),
               ),
+            ],
           ],
         ),
-        onTap: () => context.go('/products/${product.uuid}'),
       ),
     );
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.inventory_2, size: 64, color: Colors.grey),
-          const SizedBox(height: 16),
-          const Text(
-            'No hay productos',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Agrega tu primer producto para comenzar',
-            style: TextStyle(color: Colors.grey),
-          ),
-          const SizedBox(height: 24),
-          ElevatedButton.icon(
-            onPressed: () => context.go('/products/add'),
-            icon: const Icon(Icons.add),
-            label: const Text('Agregar Producto'),
-          ),
-        ],
+    return EnhancedUIComponents.enhancedEmptyState(
+      icon: Icons.inventory_2_outlined,
+      title: 'No hay productos',
+      message:
+          'Agrega tu primer producto para comenzar a gestionar tu inventario.',
+      action: ElevatedButton.icon(
+        onPressed: () {
+          SafeNavigation.safeGo(context, '/products/add');
+        },
+        icon: const Icon(Icons.add),
+        label: const Text('Agregar Producto'),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        ),
       ),
-    );
-  }
-
-  void _showSearchDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('Buscar Productos'),
-            content: TextField(
-              controller: _searchController,
-              decoration: const InputDecoration(
-                hintText: 'Buscar por nombre o código...',
-                prefixIcon: Icon(Icons.search),
-              ),
-              onChanged: (value) {
-                if (value.isNotEmpty) {
-                  ref
-                      .read(productSearchProvider.notifier)
-                      .searchProducts(value);
-                } else {
-                  ref.read(productSearchProvider.notifier).clearSearch();
-                }
-              },
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  _searchController.clear();
-                  ref.read(productSearchProvider.notifier).clearSearch();
-                  Navigator.of(context).pop();
-                },
-                child: const Text('Limpiar'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Cerrar'),
-              ),
-            ],
-          ),
     );
   }
 }
